@@ -5,8 +5,8 @@ import (
 )
 
 func main() {
-  con, _ := net.Dial("udp", "localhost:2000")
-  buf := []byte("bla bla bla I am the packet")
+  con, _ := net.Dial("udp", "192.168.1.255:2224")
+  buf := []byte("bla bla bla I am the packet\n")
   _, err := con.Write(buf)
   if err != nil {
     fmt.Println(err)
