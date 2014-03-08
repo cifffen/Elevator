@@ -20,7 +20,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 	var lostTenders map[OrderType] 		time.Time
 	
 	//---- Start Init--------//
-	direction 		= Up
+	direction 		= Down
 	prevFloor 		= floor
 	activeTenders 	= make(map[OrderType] TenderType)
 	lostTenders 	= make(map[OrderType] time.Time)
@@ -42,10 +42,12 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 				orderReachedEvent <- true
 			}
 			
-			
-			
-			
-			if currDir <- 
+			if currDir := getDir(); currDir != direction{
+				switchDirEvent <- currDir
+				if currDir != Stop {
+					direction = currDir
+				}
+			}
 			checkTenderMaps()
 			if atEndFloor {
 				atEndEvent <- true
@@ -115,7 +117,43 @@ func msgHandler(msg OrderMsg, locOrdMat *[Floors][Buttons] int, aTenders *map[Or
 	}
 	return
 }
-
+// Check if the elevator should stop at a floor it passes
+func atOrder() (orderReached bool) {
+	floor := drivers.ElevGetFloorSensorSignal()
+	orderReached = false
+	if floor != -1 {
+		prevFloor = floor
+		drivers.ElevSetFloorIndicator(floor) //Set floor indicator
+		if floor == Floors-1 {               // If the elevator is at the top floor the direction is changed as it can't go further Upwards.
+			direction = Down
+			atEndFloor = true
+		} else if floor == 0 { // If the elevator is at the bottom floor the direction is changed as it can't go further Downwards.
+			direction = Up
+			atEndFloor = true
+		} else {
+			atEndFloor = false
+		}
+		dir:= ReturnDirection()
+		var msg network.ButtonMsg
+		msg.Action = network.DeleteOrder
+		if locOrdMat[floor][PanelButton] == 1 || firstOrderFloor == floor { // Stop if an order from the inside panel has been made at the current floor.
+			firstOrderFloor = -1
+			msg.Order=network.OrderType{PanelButton, floor}
+			orderHandler(msg)
+			orderReached = true
+		} 
+		if (dir == Up && locOrdMat[floor][UpButton] == 1) { // Stop if an order from the direction button at the current floor has been made and the elevator is going in that direction.
+			msg.Order=network.OrderType{UpButton, floor}
+			orderHandler(msg)
+			orderReached = true
+		} else if (dir == Down && locOrdMat[floor][DownButton] == 1) {
+			msg.Order=network.OrderType{DownButton, floor}
+			orderHandler(msg)
+			orderReached = true
+		}	
+	}
+	return 
+}
 //Checks that the message is valid
 func checkMsg(msg OrderMsg) bool {
 	switch msg.Action {
@@ -166,3 +204,45 @@ func getOrders(locOrdMat *[Floors][Buttons] int, aTenders map[OrderType] TenderT
 	return
 }
 
+func GetDir(prevDir Direction, prevFloor int, locOrdMat[Floors][Buttons] int) Direction {
+	if IsLocOrdMatEmpty(locOrdMat){
+		return Stop
+	} else if prevFloor == Floors-1 {
+		return Down
+	} else if prevFloor == 0{
+		return Up
+	}
+	var ordersAtCur [3]bool //	Holds all orders on the current floor
+	var ordersInDir [2]bool // [0] is true if there are orders further up, [1] is true if there is any up
+	var currDir int     // Varable to hold the current direction to be used in orderInDir. 0 for up and 1 for down.
+	for i := range locOrdMat {
+		for j := range locOrdMat[i] {
+			if locOrdMat[i][j] == 1 {
+				if i == prevFloor { //check for orders at current floor
+					ordersAtCur[j] = true
+				} else if i > prevFloor { // check for orders upwards
+					ordersInDir[UpButton] = true
+				} else if i < prevFloor { // check for orders downwards
+					ordersInDir[1] = true
+				}
+			}
+		}
+	}
+	switch prevDir {
+		case Up:
+			currDir = UpButton
+		case Down:
+			currDir = DownButton
+	}
+	if ordersAtCur[currDir] || ordersAtCur[2] { //Just stay put if there is an order at current floor from the panel or from outside in the same direction as travel
+		return Stop
+	} else if ordersInDir[currDir] { //Return current direction if there is an order in that direction
+		return prevDir
+	} else if ordersAtCur[currDir+int(direction)] { //Just stay put if there is an order at current flor in opposite direction
+		return Stop
+	} else if ordersInDir[currDir+int(direction)] { //Go in opposit direction if there is an order there 
+		prevDir = -1 * prevDir
+		return prevDir
+	}
+	return prevDir 	// Stay put if the logic above fails (Yeah, right...)
+}
