@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"../orders"
 )
 
 var sock *net.UDPConn
@@ -34,7 +35,7 @@ type ButtonMsg struct {
 	TenderVal 	int				// If the action is a Tender, this will hold the cost from the sender, that is, the value from the cost function for this order
 }
 
-func BroadcastOnNet(msg ButtonMsg) {
+func BroadcastOnNet(msg orders.ButtonMsg) {
 	addr, err := net.ResolveUDPAddr("udp", BroadCastIp+NetworkPort)
 	if err != nil {
 		fmt.Println(err)
@@ -61,7 +62,7 @@ func getSelfIP() string {
 		return strings.Split(string(conn.LocalAddr().String()), ":")[0]
 	}
 }
-func ListenOnNetwork(msgChan chan<- ButtonMsg) {
+func ListenOnNetwork(msgChan chan<- orders.ButtonMsg) {
 	addr, err := net.ResolveUDPAddr("udp", NetworkPort)
 	if err != nil {
 		log.Printf("Error: %v. Running without network connetion", err)
@@ -77,7 +78,7 @@ func ListenOnNetwork(msgChan chan<- ButtonMsg) {
 		log.Printf("Error: %v. Sending aborted", err)
 	}
 	fmt.Println("Listnening on port", addr)
-	var msg ButtonMsg
+	var msg orders.ButtonMsg
 	for {
 		buf := make([]byte, 1024)
 		rlen, addr, err := sock.ReadFromUDP(buf)
@@ -85,7 +86,7 @@ func ListenOnNetwork(msgChan chan<- ButtonMsg) {
 			err = json.Unmarshal(buf[0:rlen], &msg)
 			if err != nil {
 				log.Printf("Error: %v.", err)
-			} else if msg.Action != InvalidMsg{  // If the message received is not of type ButtonMsg, all elements of msg will be zero(msg={0,0,0}), so we can check if it is valid or not
+			} else if msg.Action != orders.InvalidMsg{  // If the message received is not of type ButtonMsg, all elements of msg will be zero(msg={0,0,0}), so we can check if it is valid or not
 				fmt.Printf("Msg in network: %d \n", msg)
 				msgChan <- msg
 			}
