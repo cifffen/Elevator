@@ -1,31 +1,8 @@
-package order
+package types
 
 
 type ActionType int
-type Direction int
 
-const (
-	Down Direction = -1
-	Up             = 1
-	Stop           = 0
-)
-
-const (
-	UpButton 	int = iota
-	DownButton
-	PanelButton
-)
-
-type TenderType struct{
-	time 	time.Time
-	val 	int
-}
-
-const TakeActiveTender	 = 500 // Milliseconds
-const TakeLostTender     = 20  // Seconds
-const SamplingTime		 = 1   // Milliseconds
-const Floors 			 = 4   // Number of floors
-const Buttons			 = 3   // Number of buttons
 const (
 	InvalidMsg ActionType  = iota  //	Only used to check if the message recieved is of type ButtonMsg.
 	NewOrder		 //

@@ -21,6 +21,7 @@ const (
 	TimerFinished
 	NewOrder
 	SwitchDirection
+	AtEndFloor
 )
 const (
 	Idle State = iota
@@ -65,28 +66,32 @@ func brake() {
 func EventManager() {
 	orderReachedEvent := make(chan bool)
 	newOrderEvent 	  := make(chan bool)
-	switchDirEvent 	  := make(chan bool)
+	switchDirEvent 	  := make(chan orders.Direction)
 	atEndEvent 		  := make(chan bool)
 	noOrdersEvent	  := make(chan bool)
-	go orders.CheckForEvents(orderReachedEvent, newOrderEvent, switchDirEvent, atEndEvent, noOrdersEvent)
+	go orders.OrderHandler(orderReachedEvent, newOrderEvent, switchDirEvent, atEndEvent, noOrdersEvent)
 	for {
 		select {
 		case <-brakeTimer:    // Brake finished. Set speed to 0
+		   fmt.Printf("Brake event\n")
 			drivers.ElevSetSpeed(int(orders.Stop))
-		case noOrders := !<-newOrderEvent:	// We got a new order, so noOrders must be set to false
+		case <-newOrderEvent:	// We got a new order, so noOrders must be set to false
 			fmt.Printf("New order event\n")
+			noOrders = false
 			stateMachine(NewOrder)
-		case direction:= <-switchDirEvent:  // A direction change must happen, so direction is changed for the next time we set elevSetSpeed()
-			fmt.Printf("Switch direction event\n")
+		case direction = <-switchDirEvent:  // A direction change must happen, so direction is changed for the next time we set elevSetSpeed()
+			stateMachine(SwitchDirection)
+			fmt.Printf("Switch direction event %d\n", direction)
 		case <-atEndEvent:					// Elevator has reached an end floor (max or min) and might need to change direction in case it is running and has gotten "lost"
 			stateMachine(AtEndFloor)
+			fmt.Printf("At end event\n")
 		case <-orderReachedEvent:			// Reached a floor where there is an order
 			fmt.Printf("Order reached event\n")
 			stateMachine(OrderReached)
 		case <-doorTimer:					// Door timer is finished and we can close the doors
 			fmt.Printf("Door timer finished\n")
 			stateMachine(TimerFinished)
-		case noOrders := <-noOrdersEvent:   // We now have no orders left. No orders i therefore set to true so we can go to Idle
+		case noOrders = <-noOrdersEvent:   // We now have no orders left. No orders i therefore set to true so we can go to Idle
 			fmt.Printf("Door timer finished\n")
 		}
 	}
@@ -99,11 +104,14 @@ func stateMachine(event Event) {
 		case NewOrder:
 				drivers.ElevSetSpeed(int(direction)*Speed)
 				state = Running
-				fmt.Printf("Running")
+				fmt.Printf("Running  \n")
+		}
 	case Running:
 		switch event {
 		case AtEndFloor:
 			drivers.ElevSetSpeed(int(direction)*Speed)
+		case SwitchDirection:
+		   drivers.ElevSetSpeed(int(direction)*Speed)
 		case OrderReached:
 			drivers.ElevSetSpeed(-1*int(direction)*Speed)
 			brake()
@@ -119,7 +127,7 @@ func stateMachine(event Event) {
 			if noOrders {
 				state = Idle
 				fmt.Printf("Idle \n")
-			else {
+			} else {
 				state = Running
 				fmt.Printf("Runing \n")
 				drivers.ElevSetSpeed(int(direction)*Speed)
