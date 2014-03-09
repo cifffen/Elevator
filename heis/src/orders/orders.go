@@ -28,7 +28,7 @@ type TenderType struct{
 	val 	int
 }
 
-const TakeActiveTender	 = 500 // Milliseconds
+const TakeActiveTender	 = 1000 // Milliseconds
 const TakeLostTender     = 20  // Seconds
 const SamplingTime		 = 1   // Milliseconds
 const Floors 			 = 4   // Number of floors
@@ -177,7 +177,7 @@ func checkTenderMaps(aTenders map[types.OrderType] TenderType, lTenders map[type
 	var msg types.OrderMsg
 	tenderAction = false
 	for order, tenderTime := range lTenders {   
-		if time.Since(tenderTime) > time.Second*TakeActiveTender{  	// If the time for the lost tender has run out
+		if time.Since(tenderTime) > time.Second*TakeLostTender{  	// If the time for the lost tender has run out
 				msg.Order     = order									// we delete the order from our lists
 				msg.Action    = types.DeleteOrder							// and start a new tender session on the network for the order
 				tenderOrders  = append(tenderOrders,msg)
@@ -187,7 +187,7 @@ func checkTenderMaps(aTenders map[types.OrderType] TenderType, lTenders map[type
 		}
 	}
 	for order, value := range aTenders {
-		if time.Since(value.time) > time.Millisecond*TakeLostTender{  // If the time has passed, we have won the tender and can add it to our order list
+		if time.Since(value.time) > time.Millisecond*TakeActiveTender{  // If the time has passed, we have won the tender and can add it to our order list
 				msg.Order     = order
 				msg.Action    = types.AddOrder
 				tenderOrders  = append(tenderOrders,msg)

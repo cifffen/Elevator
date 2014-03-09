@@ -14,7 +14,7 @@ var sock *net.UDPConn
 type ActionType int
 
 const NumbOfBroadcasts = 5
-const BroadCastIp = "192.168.1.255"
+const BroadCastIp = "129.241.187.255"
 const NetworkPort = ":2224"
 
 
@@ -30,6 +30,7 @@ func BroadcastOnNet(msg types.OrderMsg) {
 	}
 	for i := 0; i < NumbOfBroadcasts; i++ {  
 		_, err = sock.WriteTo(buf, addr)
+		fmt.Printf("Printing \n")
 		if err != nil {
 			log.Println(err)
 		}
