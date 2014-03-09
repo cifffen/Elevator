@@ -7,7 +7,7 @@ import (
 		"math"
 )
 
-const floorValue 	 = 1 	//Time to travel from one floor to the next
+const floorValue 	 = 3 	//Time to travel from one floor to the next
 const waitValue      = 3 	//Time spent for each stop
 const directionValue = 20 	//Extra cost if the order is in a conflicting direction
 

@@ -34,11 +34,10 @@ const SamplingTime		 = 1   // Milliseconds
 const Floors 			 = 4   // Number of floors
 const Buttons			 = 3   // Number of buttons
 
-func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, switchDirEvent chan<- Direction, atEndEvent chan<- bool, noOrdersEvent chan<- bool) {
+func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, switchDirEvent chan<- Direction, noOrdersEvent chan<- bool) {
 	var direction 		Direction 	// Keeps the last direction the elevator was heading. Can only be changed in atOrder() and GetDir()
 	var prevDirection Direction
 	var prevFloor 		int      	// Holds the previous floor the elevator past. Can only be changed at atOrder()
-	var atEndFloor 		bool     	// True if the elevator is at the lowest or highest floor. Used to change direction in case it got "lost"
 	var noOrders		bool		// True if we have no orders in locOrdMat
 	var locOrdMat [Floors][3]int 	// Holds the orders that the elevator has accepted and will carry out
 	var activeTenders map[types.OrderType] 	TenderType
@@ -46,7 +45,6 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 	
 	//---- Start Init of variables and network--------//
 	direction 		= Down
-	atEndFloor 		= false
 	noOrders		= true
 	activeTenders 	= make(map[types.OrderType] TenderType)
 	lostTenders 	= make(map[types.OrderType] time.Time)
@@ -87,12 +85,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 					direction = currDir
 				}
 			}
-			if temp := checkIfAtEndFloor(prevFloor); temp != atEndFloor {  // Only go in if there is a change, i.e we can only launch the event once when we reach an end
-				atEndFloor = temp
-				if atEndFloor{ 				// Launch event if we are at a first floor
-					atEndEvent <- true
-				}
-			}
+
 			if tenderAction , tenderOrders := checkTenderMaps(activeTenders, lostTenders); tenderAction{ // If some times for the tenders on the tender lists have run out -
 				for _, msg := range tenderOrders {
 					if newOrder:= msgHandler(msg, &locOrdMat, &activeTenders, &lostTenders, prevFloor, direction); newOrder{ // we let msgHandler handle the messages/orders. Add them if they are from active tenders or start a new tender session over the network if they are from lost tenders
@@ -247,14 +240,6 @@ func atOrder(locOrdMat[Floors][Buttons] int, prevDir Direction, prevFloor *int) 
 	return 
 }
 
-// Check if the elevator is at an end floor
-func checkIfAtEndFloor(floor int) (bool){
-	if floor == Floors-1 || floor == 0{ 	// Reached an end floor
-		return true
-	} else {
-		return false
-	}
-}
 //Checks that the message is valid
 func checkMsg(msg types.OrderMsg) bool {
 	switch msg.Action {

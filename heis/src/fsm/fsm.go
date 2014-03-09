@@ -21,7 +21,6 @@ const (
 	TimerFinished
 	NewOrder
 	SwitchDirection
-	AtEndFloor
 )
 const (
 	Idle State = iota
@@ -67,9 +66,8 @@ func EventManager() {
 	orderReachedEvent := make(chan bool)
 	newOrderEvent 	  := make(chan bool)
 	switchDirEvent 	  := make(chan orders.Direction)
-	atEndEvent 		  := make(chan bool)
 	noOrdersEvent	  := make(chan bool)
-	go orders.OrderHandler(orderReachedEvent, newOrderEvent, switchDirEvent, atEndEvent, noOrdersEvent)
+	go orders.OrderHandler(orderReachedEvent, newOrderEvent, switchDirEvent,  noOrdersEvent)
 	for {
 		select {
 		case <-brakeTimer:    // Brake finished. Set speed to 0
@@ -82,9 +80,6 @@ func EventManager() {
 		case direction = <-switchDirEvent:  // A direction change must happen, so direction is changed for the next time we set elevSetSpeed()
 			stateMachine(SwitchDirection)
 			fmt.Printf("Switch direction event %d\n", direction)
-		case <-atEndEvent:					// Elevator has reached an end floor (max or min) and might need to change direction in case it is running and has gotten "lost"
-			stateMachine(AtEndFloor)
-			fmt.Printf("At end event\n")
 		case <-orderReachedEvent:			// Reached a floor where there is an order
 			fmt.Printf("Order reached event\n")
 			stateMachine(OrderReached)
@@ -108,8 +103,6 @@ func stateMachine(event Event) {
 		}
 	case Running:
 		switch event {
-		case AtEndFloor:
-			drivers.ElevSetSpeed(int(direction)*Speed)
 		case SwitchDirection:
 		   drivers.ElevSetSpeed(int(direction)*Speed)
 		case OrderReached:
