@@ -143,6 +143,7 @@ func msgHandler(msg types.OrderMsg, locOrdMat *[Floors][Buttons] int, aTenders *
 					network.BroadcastOnNet(msg)
 				}	
 			case types.Tender:
+			   drivers.ElevSetButtonLamp(drivers.TagElevLampType(button), floor, 1)
 				if tender, ok := (*aTenders)[order]; ok { // Check if we already have a tender there
 					if tender.val > msg.TenderVal {		// If our tender is worse than the one received -
 						delete(*aTenders, order)		// we delete it from active tenders -

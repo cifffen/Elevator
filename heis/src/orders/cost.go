@@ -20,7 +20,7 @@ func cost(orderFloor int, orderType int, locOrdMat [Floors][Buttons] int, prevFl
 	} else{
 		cost = getTravelCost(orderFloor, prevFloor)
 		cost += getWaitCost(orderFloor, orderType, locOrdMat, prevFloor, direction)
-		cost += getDirectionCost(orderFloor, orderType, direction)
+		cost += getDirectionCost(orderFloor, orderType, direction, prevFloor)
 		fmt.Printf("Cost:%d\n", cost)
 		return
 	}
@@ -51,10 +51,27 @@ func getWaitCost(orderFloor int, orderType int, locOrdMat [Floors][Buttons] int,
 	return
 }
 
-func getDirectionCost(orderFloor int, orderType int, direction Direction) (directionCost int) {
-	if((orderType == UpButton && direction == Up)||(orderType == DownButton && direction == Down)){
-		directionCost = 0
-	} //else if(orderFloor == 
+func getDirectionCost(orderFloor int, orderType int, direction Direction, prevFloor int) (directionCost int) {
+	fmt.Printf("direction %d", direction)	
+	if(direction == Up){
+		if((orderType != 1 || (orderType == 1 && orderFloor == Floors-1)) && orderFloor > prevFloor){
+			directionCost = 0
+			return
+		}else{
+			directionCost = directionValue
+			return
+		}
+	}else{
+		if((orderType != 0 || (orderType == 0 && orderFloor == 0)) && orderFloor < prevFloor){
+			directionCost = 0
+			return
+		}else{
+			directionCost = directionValue
+      	return
+      }
+   }
+   fmt.Printf("Failed to get directionCost \n")
+	directionCost = 0
 	return
 }
 
