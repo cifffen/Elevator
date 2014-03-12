@@ -12,8 +12,8 @@ import (
 const ProPairsPort  = ":1989" // Port used by processpairs
 const BroadcastRate = 50      //How often you broadcast to the slave, in milliseconds
 const HeartBeat 	= 400	  // Time check for a heartbeat [ms]
-func StartSlave()() {
-	cmd := exec.Command("mate-terminal", "-x", "./../main/main", "Slave") // Start a new program with the argument Slave so the program knows what it is.
+func StartSlave(number int)() {
+	cmd := exec.Command("mate-terminal", "-x", "./../main/main", "Slave",number ) // Start a new program with the argument Slave so the program knows what it is.
 	fmt.Printf("Slave started\n")	
 	err := cmd.Start()  
 	if err != nil {
@@ -22,7 +22,7 @@ func StartSlave()() {
 }	
 
 func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {	
-	addr, err := net.ResolveUDPAddr("udp", ProPairsPort)
+	addr, err := net.ResolveUDPAddr("udp", "localhost"+ProPairsPort)
 	if err != nil {
 		log.Printf("Error: %v", err)
 		return
@@ -64,18 +64,18 @@ func UdpHeartBeat(number int)(){
 func ProcessPairs(args []string) int {
 	if len(os.Args)==1{
 		time.Sleep(time.Second*3)
-		StartSlave()
+		StartSlave(0)
 		go UdpHeartBeat(0)
 		return 1
-	} else if os.Args[1] == "Slave" {
+	} else if os.Args[1] == "Slave" && len(os.Args)==3 {
 		ticker := time.NewTicker(time.Second*1)
 		numberChan := make(chan int)
 		var sock *net.UDPConn
 		go UdpListenToMaster(numberChan, &sock)
-		var num int	
+		num := os.Args[2]
 		for {
 			select {
-				case num = <-numberChan:
+				case  <-numberChan:
 					ticker.Stop()
 					ticker = time.NewTicker(time.Millisecond*HeartBeat)
 				case <-ticker.C:
@@ -87,7 +87,7 @@ func ProcessPairs(args []string) int {
 						return 0
 					} else {
 						time.Sleep(time.Second*4)
-						StartSlave()
+						StartSlave(num)
 						return 1
 					}
 			}
