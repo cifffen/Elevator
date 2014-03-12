@@ -34,7 +34,7 @@ func main(){
 	msgOutChan 		:= make(chan types.OrderMsg) // Channel used to send messages to the network module
 	netAliveChan	:= make(chan bool)			 // Channel used to tell if the network module has shut downs
 	
-	go fsm.EventManager(orderReachedEvent, newOrderEvent, newDirEvent, noOrdersEvent) {
 	go orders.OrderHandler(orderReachedEvent, newOrderEvent, newDirEvent, noOrdersEvent, msgInChan, msgOutChan, netAliveChan)
 	go network.ListenOnNetwork(msgInChan, msgOutChan, netAliveChan)
+	fsm.EventManager(orderReachedEvent, newOrderEvent, newDirEvent, noOrdersEvent) 
 }
