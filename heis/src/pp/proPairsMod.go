@@ -7,14 +7,15 @@ import (
 	"time"
 	"os/exec"
 	"log"
+	"strconv"
 )
 
 const ProPairsPort  = ":1989" // Port used by processpairs
 const BroadcastRate = 50      //How often you broadcast to the slave, in milliseconds
 const HeartBeat 	= 400	  // Time check for a heartbeat [ms]
 func StartSlave(number int)() {
-	cmd := exec.Command("mate-terminal", "-x", "./../main/main", "Slave",number ) // Start a new program with the argument Slave so the program knows what it is.
-	fmt.Printf("Slave started\n")	
+	cmd := exec.Command("mate-terminal", "-x", "./../main/main", "Slave", strconv.Itoa(number) ) // Start a new program with the argument Slave so the program knows what it is.
+	fmt.Printf("Slave number %d started\n", number)	
 	err := cmd.Start()  
 	if err != nil {
 		log.Printf("Error: %v", err)
@@ -30,14 +31,11 @@ func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {
 	*sock, err = net.ListenUDP("udp", addr)
 	if err != nil {
 		fmt.Println(err)
-		time.Sleep(time.Second*4)
 	}
-	fmt.Println("Connected")
 	for {
 		buf :=make([]byte,1024)
 		_, _, err := sock.ReadFromUDP(buf)
 		if err != nil {
-			time.Sleep(time.Second*4)
 			fmt.Println(err)	
 		}
 		number<-int(buf[0])
@@ -45,13 +43,13 @@ func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {
 }
 
 func UdpHeartBeat(number int)(){
+	con,err:= net.Dial("udp", "localhost"+ProPairsPort)
+	if err != nil {
+		log.Printf("Error: %v ", err)
+	}
 	for {
 		select {
 			case <-time.After(time.Millisecond*BroadcastRate):
-				con,err:= net.Dial("udp", "localhost"+ProPairsPort)
-				if err != nil {
-					log.Printf("Error: %v ", err)
-				}
 				buf :=[]byte(string(number))
 				_, err = con.Write(buf)
 				if err != nil {
@@ -72,10 +70,14 @@ func ProcessPairs(args []string) int {
 		numberChan := make(chan int)
 		var sock *net.UDPConn
 		go UdpListenToMaster(numberChan, &sock)
-		num := os.Args[2]
+		num, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Printf("Error: %v", err)
+			num = 2 	//If we get a wrong input when starting the slave
+		}				//we shutdown the program if the master dies.
 		for {
 			select {
-				case  <-numberChan:
+				case <-numberChan:
 					ticker.Stop()
 					ticker = time.NewTicker(time.Millisecond*HeartBeat)
 				case <-ticker.C:
