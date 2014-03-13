@@ -32,7 +32,7 @@ const Floors 			 = 4   // Number of floors
 const Buttons			 = 3   // Number of buttons
 
 func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, switchDirEvent chan<- int, noOrdersEvent chan<- bool, 
-					msgIn <-chan types.OrdersMsg,  msgOut chan<- types.OrdersMsg, netAliveChan <-chan bool) {
+					msgIn <-chan types.OrderMsg,  msgOut chan<- types.OrderMsg, netAliveChan <-chan bool) {
 					
 	var direction 		Direction 	// Keeps the last direction the elevator was heading. Can only be Up or down
 	var prevDirection   Direction	// Keeps the last direction the elevator was heading. Can be Up, Down or Stop
@@ -92,7 +92,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 				}								  // Must be set false as we now have an order in the order list							   
 			}
 			
-		case msg:= <-msgChan:  // Received message on the network
+		case msg:= <-msgIn:  // Received message on the network
 			if newOrder := msgHandler(msg, &locOrdMat, &activeTenders, &lostTenders, prevFloor, direction, netAlive, msgOut); newOrder{
 				newOrderEvent <-true  // New order from an empty order matrix has occured
 				noOrders = false		// Must be set false as we now have an order in the order list
@@ -136,7 +136,7 @@ func msgHandler(msg types.OrderMsg, locOrdMat *[Floors][Buttons] int, aTen *map[
 				if (*locOrdMat)[floor][button] == 1 { 	// If it is "our" order -
 					(*locOrdMat)[floor][button]=0	   	// we delete it and -
 					msg.Action = types.DeleteOrder		// and iff he network is still running we broadcast to the others to delete it aswell
-					if net alive{
+					if netAlive{
 						msgOutChan<-msg		
 					}
 				}	
@@ -283,8 +283,7 @@ func checkForOrders(locOrdMat[Floors][Buttons] int, prevFloor int)(ordersAtCurFl
 	return
 }
 // Check for orders
-func getOrders(locOrdMat *[Floors][Buttons] int, aTen map[types.OrderType] TenderType, lTen map[types.OrderType] time.Time )
-			  (newOrders bool, orders []types.OrderMsg ) {
+func getOrders(locOrdMat *[Floors][Buttons] int, aTen map[types.OrderType] TenderType, lTen map[types.OrderType] time.Time )(newOrders bool, orders []types.OrderMsg ) {
 	newOrders = false
 	var msg types.OrderMsg
 	msg.Action = types.NewOrder

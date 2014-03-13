@@ -6,8 +6,9 @@ import (
 	"../orders"
 	"../types"
 	"os"
+    "../network"
 	//"../pp"
-	"time"
+	//"time"
 )
 
 func main(){
@@ -27,7 +28,7 @@ func main(){
 	// Event channels
 	orderReachedEvent 	:= make(chan bool)
 	newOrderEvent 		:= make(chan bool)
-	switchDirEvent 		:= make(chan types.Direction)
+	newDirEvent 		:= make(chan int)
 	noOrdersEvent 		:= make(chan bool)
 	// Network  and message channels
 	msgInChan 		:= make(chan types.OrderMsg) // Channel used to send messages from the network module
@@ -35,6 +36,7 @@ func main(){
 	netAliveChan	:= make(chan bool)			 // Channel used to tell if the network module has shut downs
 	
 	go orders.OrderHandler(orderReachedEvent, newOrderEvent, newDirEvent, noOrdersEvent, msgInChan, msgOutChan, netAliveChan)
-	go network.ListenOnNetwork(msgInChan, msgOutChan, netAliveChan)
+	go network.ListenOnNetwork(msgInChan, netAliveChan)
+    go network.BroadcastOnNet(msgOutChan)
 	fsm.EventManager(orderReachedEvent, newOrderEvent, newDirEvent, noOrdersEvent) 
 }

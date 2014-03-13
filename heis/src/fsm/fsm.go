@@ -2,7 +2,6 @@ package fsm
 
 import (
 	"../drivers"
-	"../orders"
 	"fmt"
 	"time"
 )
@@ -75,11 +74,11 @@ func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newD
 	var fsm FSM                      // Make a state machine
 	fsm.state = fsm.idleState        // Set initial state to idle
 	fsm.noOrders = true              // We have no orders at the start
-	fsm.direction = int(types.Down) // Set inital direction down (as our init runs downwards)
+	fsm.direction = Down // Set inital direction down (as our init runs downwards)
 	for {
 		select {
 		case <-brakeTimer: // Brake finished. Set speed to 0
-			drivers.ElevSetSpeed(int(types.Stop))
+			drivers.ElevSetSpeed(Stop)
 		case <-newOrderEvent: // New order so noOrders must be set to false
 			fsm.noOrders = false
 			fsm.state(NewOrder)
