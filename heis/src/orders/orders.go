@@ -136,7 +136,7 @@ func msgHandler(msg types.OrderMsg, locOrdMat *[Floors][Buttons] int, aTen *map[
 				if (*locOrdMat)[floor][button] == 1 { 	// If it is "our" order -
 					(*locOrdMat)[floor][button]=0	   	// we delete it and -
 					msg.Action = types.DeleteOrder		// and iff he network is still running we broadcast to the others to delete it aswell
-					if netAlive{
+					if netAlive && orders.Button != PanelButton{
 						msgOutChan<-msg		
 					}
 				}	

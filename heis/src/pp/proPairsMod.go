@@ -43,13 +43,13 @@ func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {
 }
 
 func UdpHeartBeat(number int)(){
-	con,err:= net.Dial("udp", "localhost"+ProPairsPort)
-	if err != nil {
-		log.Printf("Error: %v ", err)
-	}
 	for {
 		select {
 			case <-time.After(time.Millisecond*BroadcastRate):
+				con,err:= net.Dial("udp", "localhost"+ProPairsPort)
+				if err != nil {
+					log.Printf("Error: %v ", err)
+				}
 				buf :=[]byte(string(number))
 				_, err = con.Write(buf)
 				if err != nil {

@@ -8,7 +8,7 @@ import (
 	"os"
     "../network"
 	//"../pp"
-	//"time"
+	"time"
 )
 
 func main(){
@@ -23,6 +23,7 @@ func main(){
 	*/
 	if fsm.InitElev()==0{ // If we fail to init the IO we exit the program. Process pairs will eventually start the program back up again
 		fmt.Printf("Error: Unable to initialize elevator hardware. Shuting down.\n")
+		time.Sleep(time.Second*4) // Sleep for a few seconds so we can read the error message.
 		os.Exit(1) 
 	}
 	// Event channels
