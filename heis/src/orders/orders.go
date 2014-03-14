@@ -32,13 +32,14 @@ const Floors 			 = 4   // Number of floors
 const Buttons			 = 3   // Number of buttons
 
 func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, switchDirEvent chan<- int, noOrdersEvent chan<- bool, 
-					msgIn <-chan types.OrderMsg,  msgOut chan<- types.OrderMsg, netAliveChan <-chan bool) {
+					msgIn <-chan types.OrderMsg,  msgOut chan<- types.OrderMsg, netAliveChan <-chan bool, doorOpenChan <-chan bool) {
 					
 	var direction 		Direction 	// Keeps the last direction the elevator was heading. Can only be Up or down
 	var prevDirection   Direction	// Keeps the last direction the elevator was heading. Can be Up, Down or Stop
 	var prevFloor 		int      	// Holds the previous floor the elevator went past. 
 	var noOrders		bool		// True if we have no orders in locOrdMat
 	var netAlive 		bool		// True if the network is up and running
+	var doorOpen		bool
 	var locOrdMat [Floors][3]int 	// Holds the orders that the elevator has accepted and will carry out
 	var activeTenders map[types.OrderType] 	TenderType  // Holds all active tenders, the time they were started and what the tender value is
 	var lostTenders map[types.OrderType] 	time.Time	// Holds all lost tenders and the time they were started (lost)
@@ -47,6 +48,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 	direction 		=  Down
 	noOrders		=  true
 	netAlive		=  true
+	doorOpen		=  true
 	activeTenders 	=  make(map[types.OrderType] TenderType)
 	lostTenders 	=  make(map[types.OrderType] time.Time)
 
@@ -76,7 +78,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 				}
 				orderReachedEvent <- true
 			}
-			if currDir := getDir(direction, prevFloor, locOrdMat); currDir !=  prevDirection{   // If we get a new direction different from the previous
+			if currDir := getDir(direction, prevFloor, locOrdMat); currDir !=  prevDirection && !doorOpen{   // If we get a new direction different from the previous
 				switchDirEvent <- int(currDir)													// We launch the switch direction event and -
 				prevDirection = currDir															// update the previous direciton variable.
 				if currDir != Stop {															// Update the direction variable if it isn't Stop
@@ -100,6 +102,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 		case netAlive = <-netAliveChan:
 			fmt.Printf("Running without network connetion.\n")
 		}
+		case doorOpen = <-doorOpenChan:
 	}
 }
 

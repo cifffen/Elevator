@@ -70,7 +70,7 @@ func brake() {
 }
 
 // Checks for events and runs the state machine when events occur
-func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newDirEvent <-chan int, noOrdersEvent <-chan bool) {
+func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newDirEvent <-chan int, noOrdersEvent <-chan bool, doorOpen chan<- bool) {
 	var fsm FSM                      // Make a state machine
 	fsm.state = fsm.idleState        // Set initial state to idle
 	fsm.noOrders = true              // We have no orders at the start
