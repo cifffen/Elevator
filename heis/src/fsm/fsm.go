@@ -87,8 +87,10 @@ func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newD
 			fsm.state(SwitchDirection)
 		case <-orderReachedEvent: // Reached a floor where there is an order
 			fsm.state(OrderReached)
+			doorOpen <- true
 		case <-doorTimer: // Door timer is finished and we can close the doors
 			fsm.state(TimerFinished)
+			doorOpen <- false
 		case fsm.noOrders = <-noOrdersEvent: // We now have no orders left. No orders i therefore set to true so we can go to Idle
 		}
 	}
