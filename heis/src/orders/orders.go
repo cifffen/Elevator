@@ -48,7 +48,7 @@ func OrderHandler(orderReachedEvent chan<- bool, newOrderEvent chan<- bool, swit
 	direction 		=  Down
 	noOrders		=  true
 	netAlive		=  true
-	doorOpen		=  true
+	doorOpen		=  false
 	activeTenders 	=  make(map[types.OrderType] TenderType)
 	lostTenders 	=  make(map[types.OrderType] time.Time)
 
