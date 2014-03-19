@@ -1,28 +1,31 @@
 package fsm
-
+/*
+Contains the event mangager and the state machine for the elevator. The State machine can go into 3 states: idle, 
+running and atFloor, whose functions should be self explainatory.
+*/
 import (
 	"../drivers"
 	"fmt"
 	"time"
 )
 
-const brakeDur = 10   //Duration, in milliseconds, of the braking time when stopping at a floor
-const doorOpenDur = 3 //Duration, in seconds, of the time the door stays open when arriving at a floor
-const Speed = 300     //The speed of the motor
+const brakeDur	  = 10   //Duration, in milliseconds, of the braking time when stopping at a floor
+const doorOpenDur = 3    //Duration, in seconds, of the time the door stays open when arriving at a floor
+const Speed       = 300  //The speed of the motor
 
 
 type (
 	Event int         // The event type
 	State func(Event) // A state is a function that takes in an event and acts based on that event
 )
-type FSM struct { // The state machine type
+type FSM struct {	// The state machine type
 	state     State // State holds the current state
 	direction int   // Holds the direction of travel
 	noOrders  bool  // True if there are no orders in the order list in the orders module
 }
 
 const(
-	Up 	 = 1
+	Up   = 1
 	Down = -1
 	Stop = 0
 )
@@ -37,7 +40,7 @@ const ( // Events
 //-----State diagram-----------------------------//
 // States: Idle, Running, AtFloor
 // Idle 	if NewOrder -> Running
-// Running	if AtOrder	-> 	AtFloor
+// Running	if AtOrder  -> 	AtFloor
 // AtFloor	if DoorTimer ? !noOrders -> Running
 // AtFloor	if DoorTimer ? noOrders  -> Idle
 //-----------------------------------------------//
@@ -70,8 +73,10 @@ func brake() {
 }
 
 // Checks for events and runs the state machine when events occur
-func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newDirEvent <-chan int, noOrdersEvent <-chan bool, doorOpen chan<- bool) {
+func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newDirEvent <-chan int, noOrdersEvent <-chan bool, doorOpenChan chan<- bool) {
 	var fsm FSM                      // Make a state machine
+	doorOpen := false
+	prevDoorOpen:= false
 	fsm.state = fsm.idleState        // Set initial state to idle
 	fsm.noOrders = true              // We have no orders at the start
 	fsm.direction = Down // Set inital direction down (as our init runs downwards)
@@ -87,11 +92,20 @@ func EventManager(orderReachedEvent <-chan bool, newOrderEvent <-chan bool, newD
 			fsm.state(SwitchDirection)
 		case <-orderReachedEvent: // Reached a floor where there is an order
 			fsm.state(OrderReached)
-			doorOpen <- true
+			if !doorOpen{
+				doorOpen= true
+			}
 		case <-doorTimer: // Door timer is finished and we can close the doors
 			fsm.state(TimerFinished)
-			doorOpen <- false
-		case fsm.noOrders = <-noOrdersEvent: // We now have no orders left. No orders i therefore set to true so we can go to Idle
+			if doorOpen{
+				doorOpen= false
+			}
+		case fsm.noOrders = <-noOrdersEvent: // We now have no orders left. No orders is therefore set to true so we can go to Idle
+		case <-time.After(time.Millisecond*10):
+				if doorOpen != prevDoorOpen{
+					doorOpenChan <- doorOpen
+					prevDoorOpen = doorOpen
+				}
 		}
 	}
 }
@@ -110,8 +124,8 @@ func (fsm *FSM) runningState(event Event) {
 	switch event {
 	case SwitchDirection: // If there is a change in direction we set the direction again
 		drivers.ElevSetSpeed(fsm.direction * Speed)
-	case OrderReached: // When we reach an order, we switch the direction to brake, start the door timer and lights and go to at floor state
-		drivers.ElevSetSpeed(-1 * fsm.direction * Speed)
+	case OrderReached: // When we reach an order, we switch the direction to brake, start the door timer and -
+		drivers.ElevSetSpeed(-1 * fsm.direction * Speed) // lights and go to at floor state
 		brake()
 		doorTimer = time.After(time.Second * doorOpenDur)
 		drivers.ElevSetDoorOpenLamp(1)

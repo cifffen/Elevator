@@ -27,7 +27,8 @@ func StartSlave(number int)() { // Start a new program with the argument Slave s
 	}	
 	fmt.Printf("Slave number %d started\n", number)	
 }	
-// Listen to the heartbeat from the master. If an error occurs here we have to shut down to prevent multiple programs runnings at once.
+// Listen to the heartbeat from the master. If an error occurs here we have to -
+// shut down to prevent multiple programs runnings at once.
 func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {	
 	addr, err := net.ResolveUDPAddr("udp", "localhost"+ProPairsPort)
 	if err != nil {							
@@ -43,20 +44,23 @@ func UdpListenToMaster(number chan<- int, sock **net.UDPConn)() {
 		time.Sleep(time.Second*2)
 		os.Exit(1)
 	}
+	check := false
 	for {
 		buf :=make([]byte,1024)
 		_, _, err := sock.ReadFromUDP(buf)
-		if err != nil {
+		if err != nil && !check {
 			log.Printf("Error: %v", err)	
 			fmt.Printf("Shuting down slave.\n")
 			time.Sleep(time.Second*2)
 			os.Exit(1)
 		}
+		check = true
 		number<-int(buf[0])
 	}
 }
 
-// Broadcast heartbeat so the slave on localhost. We shut down the elevator should an error occur here to prevent mulitple programs running at once.
+// Broadcast heartbeat so the slave on localhost. We shut down the elevator -
+// should an error occur here to prevent mulitple programs running at once.
 func UdpHeartBeat(number int)(){
 	for {
 		select {
@@ -65,7 +69,7 @@ func UdpHeartBeat(number int)(){
 				if err != nil {
 					log.Printf("Error: %v ", err)
 					fmt.Printf("Shuting down.\n")
-					time.Sleep(time.Second*4)
+					time.Sleep(time.Second*2)
 					os.Exit(1)
 				}
 				buf :=[]byte(string(number))
@@ -73,7 +77,7 @@ func UdpHeartBeat(number int)(){
 				if err != nil {
 					log.Printf("Error: %v ", err)
 					fmt.Printf("Shuting down.\n")
-					time.Sleep(time.Second*4)
+					time.Sleep(time.Second*2)
 					os.Exit(1)
 				}
 		}
@@ -103,7 +107,7 @@ func ProcessPairs(args []string) int {
 				case <-numberChan:
 					ticker.Stop()
 					ticker = time.NewTicker(time.Millisecond*HeartBeat)
-				case <-ticker.C:  // If we don't here from the master in a given time
+				case <-ticker.C:  // If we don't hear from the master in a given time
 					sock.Close()  // We close the socket so the next slave can use it
 					time.Sleep(time.Millisecond*200) // Wait from 200 ms to be sure the socket is closed before we start a slave
 					num++							 // Keep count of number of reboots
@@ -118,6 +122,6 @@ func ProcessPairs(args []string) int {
 			}
 		}
 	} 
-	fmt.Printf("Error: Wrong input. Running without processparis.")
+	fmt.Printf("Error: Wrong input. Running without processpairs.")
 	return 1
 }

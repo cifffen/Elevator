@@ -9,6 +9,7 @@ instead of importing a lot of different packages for different types etc.
 
 type ActionType int    
 
+// The different actions
 const (
 	InvalidMsg ActionType  = iota  	//Only used to check if the message recieved is of type OrderMsg.
 	NewOrder		 
@@ -24,5 +25,6 @@ type OrderType struct{
 type OrderMsg struct {
 	Action    	ActionType   		// Holds what the information of what to do with the message
 	Order 		OrderType 			// Holds the floor and button of the order
-	TenderVal 	int					// If the action is a Tender, this will hold the cost from the tender, that is, the value from the cost function for this order
-}
+	TenderVal 	int					// If the action is a Tender, this will hold the cost from the -
+}									// tender, that is, the value from the cost function for this order
+
